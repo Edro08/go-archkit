@@ -1,9 +1,9 @@
 package main
 
 import (
-	"go-archkit/app"
+	"go-archkit/internal/ui"
 )
 
 func main() {
-	app.Run()
+	ui.Run()
 }
