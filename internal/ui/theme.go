@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -53,6 +54,11 @@ var (
 			Bold(true)
 )
 
+// ClearScreen limpia la terminal y el scrollback para evitar acumulaciones de cabeceras.
+func ClearScreen() {
+	fmt.Print("\033[H\033[2J\033[3J")
+}
+
 // RenderHeader imprime el encabezado minimalista unificado con la sección activa.
 func RenderHeader(section string) string {
 	var b strings.Builder
@@ -66,15 +72,32 @@ func RenderHeader(section string) string {
 	} else {
 		b.WriteString(fmt.Sprintf("  %s\n", styleTitle.Render("Archkit v2.0")))
 	}
-	b.WriteString(fmt.Sprintf("  %s\n\n", styleDivider.Render(strings.Repeat("─", 48))))
+	b.WriteString(fmt.Sprintf("  %s\n\n", styleDivider.Render(strings.Repeat("─", 54))))
 	return b.String()
 }
 
-// CustomTheme retorna un tema de Huh minimalista y sin recuadros pesados.
+// FooterNote crea el componente visual de ayuda unificado para el pie de todas las pantallas.
+func FooterNote() *huh.Note {
+	divider := styleDivider.Render(strings.Repeat("─", 54))
+	keys := fmt.Sprintf("%s %s  •  %s %s  •  %s %s  •  %s %s",
+		lipgloss.NewStyle().Bold(true).Foreground(colorPrimary).Render("↑/↓"),
+		styleSubtitle.Render("Navigate"),
+		lipgloss.NewStyle().Bold(true).Foreground(colorPrimary).Render("←/→"),
+		styleSubtitle.Render("Toggle"),
+		lipgloss.NewStyle().Bold(true).Foreground(colorPrimary).Render("Enter"),
+		styleSubtitle.Render("Submit"),
+		lipgloss.NewStyle().Bold(true).Foreground(colorPrimary).Render("Esc"),
+		styleSubtitle.Render("Back"),
+	)
+	footer := fmt.Sprintf("\n%s\n  %s", divider, keys)
+	return huh.NewNote().Title(footer)
+}
+
+// CustomTheme retorna un tema de Huh minimalista y con sangría alineada.
 func CustomTheme() *huh.Theme {
 	t := huh.ThemeBase()
 
-	// Personalización sin bordes
+	// Alinear campos a 2 espacios
 	t.Focused.Base = lipgloss.NewStyle().PaddingLeft(2)
 	t.Blurred.Base = lipgloss.NewStyle().PaddingLeft(2)
 
@@ -93,5 +116,35 @@ func CustomTheme() *huh.Theme {
 	t.Focused.TextInput.Text = lipgloss.NewStyle().Foreground(colorText)
 	t.Focused.TextInput.Placeholder = lipgloss.NewStyle().Foreground(colorDim)
 
+	// Botones Confirm
+	t.Focused.FocusedButton = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(colorPrimary).
+		Padding(0, 2).
+		MarginRight(2)
+
+	t.Focused.BlurredButton = lipgloss.NewStyle().
+		Foreground(colorDim).
+		Padding(0, 2).
+		MarginRight(2)
+
+	t.Blurred.FocusedButton = t.Focused.FocusedButton
+	t.Blurred.BlurredButton = t.Focused.BlurredButton
+
+	// Notas
+	t.Focused.NoteTitle = lipgloss.NewStyle()
+	t.Blurred.NoteTitle = lipgloss.NewStyle()
+
 	return t
+}
+
+// CustomKeyMap configura atajos globales permitiendo cancelar con Esc o Ctrl+C.
+func CustomKeyMap() *huh.KeyMap {
+	km := huh.NewDefaultKeyMap()
+	km.Quit = key.NewBinding(
+		key.WithKeys("ctrl+c", "esc"),
+		key.WithHelp("esc", "cancelar"),
+	)
+	return km
 }

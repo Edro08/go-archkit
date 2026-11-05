@@ -6,7 +6,7 @@ Cuenta con una **TUI minimalista e interactiva** (construida con [Charm](https:/
 
 ---
 
-## Características
+## ✨ Características
 
 * **Cambiar extensiones:** Escaneo automático de extensiones en la carpeta elegida, selección con flechas y soporte recursivo opcional.
 * **Numerar en serie:** Ordenamiento natural (`item_2.txt` precede a `item_10.txt`), padding de ceros a la izquierda automático y opción de renombrar *in-place* o mover a una subcarpeta.
@@ -16,18 +16,15 @@ Cuenta con una **TUI minimalista e interactiva** (construida con [Charm](https:/
 
 ---
 
-## Compilación
+## ⚡ Compilación y Uso
 
-Requiere Go 1.25 o posterior:
+**Requiere Go 1.25 o posterior:**
 
 ```powershell
 go build -o archkit.exe .
 ```
 
-## Uso
-
-Simplemente ejecuta el binario en la terminal o haz doble clic:
-
+**Ejecutar (o haz doble clic sobre archkit.exe)**
 ```powershell
 .\archkit.exe
 ```

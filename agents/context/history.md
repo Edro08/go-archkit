@@ -16,6 +16,12 @@
   - Menú de confirmación con opción de retorno («Volver a editar») sin perder los valores ingresados.
 - **Orquestador Principal y Entrypoint ([`internal/ui/app.go`](file:///d:/Projects/Go/go-archkit/internal/ui/app.go), [`main.go`](file:///d:/Projects/Go/go-archkit/main.go))**:
   - Reemplazo del bucle principal en `main.go` delegando en `ui.Run()`.
+- **Refinamiento de UX, Barra de Atajos y Valores por Defecto ([`internal/ui/theme.go`](file:///d:/Projects/Go/go-archkit/internal/ui/theme.go), [`internal/ui/forms.go`](file:///d:/Projects/Go/go-archkit/internal/ui/forms.go), [`README.md`](file:///d:/Projects/Go/go-archkit/README.md))**:
+  - Incorporada barra de ayuda inferior unificada (`FooterNote`) presente en todas las pantallas (`↑/↓ Navigate • ←/→ Toggle • Enter Submit • Esc Back`).
+  - Habilitada cancelación instantánea con tecla `Esc` en cualquier campo sin necesidad de completar el formulario.
+  - Ajustados valores predeterminados seguros en numeración: conservar nombre original en `No`, in-place en `No` y subcarpeta destino por defecto en `temp/`.
+  - Limpieza de pantalla y scrollback (`ClearScreen`) entre vistas para evitar encabezados duplicados.
+  - Unificada la sección de compilación y ejecución rápida en `README.md`.
 - **Verificación**:
   - Compilación exitosa del binario `archkit.exe` (`go build -o archkit.exe .`) y ejecución de pruebas unitarias (`go test ./...`) aprobadas.
 

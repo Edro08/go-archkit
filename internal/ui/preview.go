@@ -17,6 +17,7 @@ const (
 
 // ShowPreview renderiza la vista previa de cambios y solicita confirmación interactiva.
 func ShowPreview(plan *core.FilePlan) (PreviewAction, error) {
+	ClearScreen()
 	fmt.Print(RenderHeader("Vista Previa"))
 
 	total := plan.Total()
@@ -31,8 +32,9 @@ func ShowPreview(plan *core.FilePlan) (PreviewAction, error) {
 					Title("Acción").
 					Options(huh.NewOption("Regresar al menú principal", "back")).
 					Value(&dummy),
+				FooterNote(),
 			),
-		).WithTheme(CustomTheme()).Run()
+		).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false).Run()
 		return ActionCancel, err
 	}
 
@@ -80,8 +82,9 @@ func ShowPreview(plan *core.FilePlan) (PreviewAction, error) {
 						huh.NewOption("Cancelar operación", string(ActionCancel)),
 					).
 					Value(&choice),
+				FooterNote(),
 			),
-		).WithTheme(CustomTheme()).Run()
+		).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false).Run()
 
 		return PreviewAction(choice), err
 	}
@@ -100,8 +103,9 @@ func ShowPreview(plan *core.FilePlan) (PreviewAction, error) {
 				Title("¿Deseas aplicar estos cambios?").
 				Options(options...).
 				Value(&action),
+			FooterNote(),
 		),
-	).WithTheme(CustomTheme()).Run()
+	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false).Run()
 
 	if err != nil {
 		return ActionCancel, err

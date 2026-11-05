@@ -11,7 +11,7 @@ import (
 // Run inicia el bucle interactivo principal de Archkit.
 func Run() {
 	for {
-		fmt.Print("\033[2J\033[H") // Limpiar pantalla en terminal
+		ClearScreen()
 		fmt.Print(RenderHeader(""))
 
 		var choice string
@@ -27,8 +27,9 @@ func Run() {
 						huh.NewOption("Salir", "exit"),
 					).
 					Value(&choice),
+				FooterNote(),
 			),
-		).WithTheme(CustomTheme()).Run()
+		).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false).Run()
 
 		if err != nil || choice == "exit" {
 			fmt.Println("\n  " + styleSubtitle.Render("Hasta pronto."))
@@ -83,7 +84,7 @@ func handleExtChange() {
 }
 
 func handleNumbering() {
-	opts := core.NumbererOptions{Directory: ".", InPlace: true, TargetSubdir: "numerados"}
+	opts := core.NumbererOptions{Directory: ".", InPlace: false, TargetSubdir: "temp", KeepOriginalName: false}
 	for {
 		newOpts, cancelled, err := FormNumbering(opts)
 		if err != nil || cancelled {
@@ -218,8 +219,9 @@ func pause() {
 				Title("Presiona Enter para continuar").
 				Options(huh.NewOption("Continuar", "ok")).
 				Value(&dummy),
+			FooterNote(),
 		),
-	).WithTheme(CustomTheme()).Run()
+	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false).Run()
 }
 
 func init() {

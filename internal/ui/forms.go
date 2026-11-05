@@ -15,6 +15,7 @@ import (
 
 // FormExtChange presenta el formulario interactivo para cambio de extensiones.
 func FormExtChange(defaults core.ExtChangeOptions) (core.ExtChangeOptions, bool, error) {
+	ClearScreen()
 	fmt.Print(RenderHeader("Cambiar Extensiones"))
 
 	dir := defaults.Directory
@@ -33,22 +34,13 @@ func FormExtChange(defaults core.ExtChangeOptions) (core.ExtChangeOptions, bool,
 				Title("Carpeta").
 				Description("Ruta relativa o absoluta (ej. . para actual)").
 				Value(&dir).
-				Validate(func(s string) error {
-					s = strings.TrimSpace(s)
-					if s == "" {
-						return errors.New("la carpeta no puede estar vacía")
-					}
-					info, err := os.Stat(s)
-					if err != nil || !info.IsDir() {
-						return fmt.Errorf("la carpeta %q no existe", s)
-					}
-					return nil
-				}),
+				Validate(validateDir),
+			FooterNote(),
 		),
-	).WithTheme(CustomTheme()).Run()
+	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false).Run()
 
 	if err != nil {
-		return defaults, true, err
+		return defaults, true, nil
 	}
 
 	absDir, _ := filepath.Abs(dir)
@@ -72,25 +64,35 @@ func FormExtChange(defaults core.ExtChangeOptions) (core.ExtChangeOptions, bool,
 	}
 
 	if len(extOptions) > 1 {
-		_ = huh.NewForm(
+		err := huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
 					Title("Extensión actual detectada").
 					Options(extOptions...).
 					Value(&selectedExt),
+				FooterNote(),
 			),
-		).WithTheme(CustomTheme()).Run()
+		).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false).Run()
+
+		if err != nil {
+			return defaults, true, nil
+		}
 	}
 
 	if selectedExt == "__manual__" {
-		_ = huh.NewForm(
+		err := huh.NewForm(
 			huh.NewGroup(
 				huh.NewInput().
 					Title("Extensión actual").
 					Placeholder(".jpeg").
 					Value(&currentExt),
+				FooterNote(),
 			),
-		).WithTheme(CustomTheme()).Run()
+		).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false).Run()
+
+		if err != nil {
+			return defaults, true, nil
+		}
 	} else {
 		currentExt = selectedExt
 	}
@@ -109,13 +111,14 @@ func FormExtChange(defaults core.ExtChangeOptions) (core.ExtChangeOptions, bool,
 					return nil
 				}),
 			huh.NewConfirm().
-				Title("¿Incluir subcarpetas?").
+				Title("¿Incluir subcarpetas recursivamente?").
 				Value(&recursive),
+			FooterNote(),
 		),
-	).WithTheme(CustomTheme())
+	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false)
 
 	if err := form.Run(); err != nil {
-		return defaults, true, err
+		return defaults, true, nil
 	}
 
 	return core.ExtChangeOptions{
@@ -128,6 +131,7 @@ func FormExtChange(defaults core.ExtChangeOptions) (core.ExtChangeOptions, bool,
 
 // FormNumbering presenta el formulario interactivo para numerar archivos en serie.
 func FormNumbering(defaults core.NumbererOptions) (core.NumbererOptions, bool, error) {
+	ClearScreen()
 	fmt.Print(RenderHeader("Numerar Archivos en Serie"))
 
 	dir := defaults.Directory
@@ -142,11 +146,17 @@ func FormNumbering(defaults core.NumbererOptions) (core.NumbererOptions, bool, e
 	}
 	prefix := defaults.Prefix
 	suffix := defaults.Suffix
+
+	// Por defecto: NO conservar nombre original (false)
 	keepOriginal := defaults.KeepOriginalName
+
+	// Por defecto: NO renombrar in-place (false)
 	inPlace := defaults.InPlace
+
+	// Por defecto: subcarpeta "temp"
 	targetSubdir := defaults.TargetSubdir
-	if targetSubdir == "" {
-		targetSubdir = "numerados"
+	if strings.TrimSpace(targetSubdir) == "" {
+		targetSubdir = "temp"
 	}
 
 	form := huh.NewForm(
@@ -170,8 +180,6 @@ func FormNumbering(defaults core.NumbererOptions) (core.NumbererOptions, bool, e
 					}
 					return nil
 				}),
-		),
-		huh.NewGroup(
 			huh.NewInput().
 				Title("Prefijo (opcional)").
 				Placeholder("ej. doc_").
@@ -185,27 +193,27 @@ func FormNumbering(defaults core.NumbererOptions) (core.NumbererOptions, bool, e
 				Value(&keepOriginal),
 			huh.NewConfirm().
 				Title("¿Renombrar en la misma carpeta (in-place)?").
-				Description("Si no, se guardarán en una subcarpeta").
+				Description("Si eliges No, se guardarán en una subcarpeta").
 				Value(&inPlace),
+			huh.NewInput().
+				Title("Subcarpeta de destino (si no es in-place)").
+				Placeholder("temp (por defecto)").
+				Value(&targetSubdir),
+			FooterNote(),
 		),
-	).WithTheme(CustomTheme())
+	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false)
 
 	if err := form.Run(); err != nil {
-		return defaults, true, err
-	}
-
-	if !inPlace {
-		_ = huh.NewForm(
-			huh.NewGroup(
-				huh.NewInput().
-					Title("Nombre de subcarpeta destino").
-					Value(&targetSubdir),
-			),
-		).WithTheme(CustomTheme()).Run()
+		return defaults, true, nil
 	}
 
 	absDir, _ := filepath.Abs(dir)
 	startNum, _ := new(big.Int).SetString(strings.TrimSpace(startStr), 10)
+
+	cleanSubdir := strings.TrimSpace(targetSubdir)
+	if cleanSubdir == "" {
+		cleanSubdir = "temp"
+	}
 
 	return core.NumbererOptions{
 		Directory:        absDir,
@@ -216,12 +224,13 @@ func FormNumbering(defaults core.NumbererOptions) (core.NumbererOptions, bool, e
 		Suffix:           suffix,
 		KeepOriginalName: keepOriginal,
 		InPlace:          inPlace,
-		TargetSubdir:     targetSubdir,
+		TargetSubdir:     cleanSubdir,
 	}, false, nil
 }
 
 // FormRenaming presenta el formulario interactivo para buscar y reemplazar en nombres.
 func FormRenaming(defaults core.RenamerOptions) (core.RenamerOptions, bool, error) {
+	ClearScreen()
 	fmt.Print(RenderHeader("Buscar y Reemplazar"))
 
 	dir := defaults.Directory
@@ -255,8 +264,6 @@ func FormRenaming(defaults core.RenamerOptions) (core.RenamerOptions, bool, erro
 				Title("Reemplazar por").
 				Placeholder("ej. original (o dejar vacío para borrar)").
 				Value(&replace),
-		),
-		huh.NewGroup(
 			huh.NewInput().
 				Title("Agregar prefijo (opcional)").
 				Placeholder("ej. 2026_").
@@ -271,11 +278,12 @@ func FormRenaming(defaults core.RenamerOptions) (core.RenamerOptions, bool, erro
 			huh.NewConfirm().
 				Title("¿Incluir subcarpetas recursivamente?").
 				Value(&recursive),
+			FooterNote(),
 		),
-	).WithTheme(CustomTheme())
+	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false)
 
 	if err := form.Run(); err != nil {
-		return defaults, true, err
+		return defaults, true, nil
 	}
 
 	absDir, _ := filepath.Abs(dir)
@@ -294,6 +302,7 @@ func FormRenaming(defaults core.RenamerOptions) (core.RenamerOptions, bool, erro
 
 // FormNormalizing presenta el formulario interactivo para normalizar a kebab-case, snake_case, etc.
 func FormNormalizing(defaults core.NormalizerOptions) (core.NormalizerOptions, bool, error) {
+	ClearScreen()
 	fmt.Print(RenderHeader("Normalizar Nombres de Archivo"))
 
 	dir := defaults.Directory
@@ -334,11 +343,12 @@ func FormNormalizing(defaults core.NormalizerOptions) (core.NormalizerOptions, b
 			huh.NewConfirm().
 				Title("¿Incluir subcarpetas recursivamente?").
 				Value(&recursive),
+			FooterNote(),
 		),
-	).WithTheme(CustomTheme())
+	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false)
 
 	if err := form.Run(); err != nil {
-		return defaults, true, err
+		return defaults, true, nil
 	}
 
 	absDir, _ := filepath.Abs(dir)
