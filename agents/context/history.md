@@ -22,6 +22,9 @@
   - Ajustados valores predeterminados seguros en numeración: conservar nombre original en `No`, in-place en `No` y subcarpeta destino por defecto en `temp/`.
   - Limpieza de pantalla y scrollback (`ClearScreen`) entre vistas para evitar encabezados duplicados.
   - Unificada la sección de compilación y ejecución rápida en `README.md`.
+- **Compactación Visual de Formularios ([`internal/ui/theme.go`](file:///d:/Projects/Go/go-archkit/internal/ui/theme.go), [`internal/ui/forms.go`](file:///d:/Projects/Go/go-archkit/internal/ui/forms.go))**:
+  - Activado modo `.Inline(true)` en todos los campos de texto y confirmaciones Yes/No, permitiendo que la pregunta y la respuesta/botones convivan en una sola línea.
+  - Reducido el espaciado inter-campos (`FieldSeparator`) a un solo salto de línea eliminando los dobles saltos vacíos por defecto de Huh, reduciendo la altura vertical en más del 60%.
 - **Verificación**:
   - Compilación exitosa del binario `archkit.exe` (`go build -o archkit.exe .`) y ejecución de pruebas unitarias (`go test ./...`) aprobadas.
 

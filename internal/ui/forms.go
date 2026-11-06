@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // FormExtChange presenta el formulario interactivo para cambio de extensiones.
@@ -27,83 +28,30 @@ func FormExtChange(defaults core.ExtChangeOptions) (core.ExtChangeOptions, bool,
 	newExt := defaults.NewExt
 	recursive := defaults.Recursive
 
-	// 1. Preguntar por directorio
-	err := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Carpeta").
-				Description("Ruta relativa o absoluta (ej. . para actual)").
-				Value(&dir).
-				Validate(validateDir),
-			FooterNote(),
-		),
-	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false).Run()
-
-	if err != nil {
-		return defaults, true, nil
-	}
-
-	absDir, _ := filepath.Abs(dir)
-
-	// 2. Escanear extensiones para sugerir al usuario
-	stats, _ := core.ScanExtensions(absDir, recursive)
-	var extOptions []huh.Option[string]
-	for _, s := range stats {
-		if s.Extension != "(sin extensión)" {
-			extOptions = append(extOptions, huh.NewOption(
-				fmt.Sprintf("%s (%d archivos)", s.Extension, s.Count),
-				s.Extension,
-			))
-		}
-	}
-	extOptions = append(extOptions, huh.NewOption("Otra (escribir manualmente)", "__manual__"))
-
-	selectedExt := "__manual__"
-	if len(stats) > 0 && stats[0].Extension != "(sin extensión)" {
-		selectedExt = stats[0].Extension
-	}
-
-	if len(extOptions) > 1 {
-		err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("Extensión actual detectada").
-					Options(extOptions...).
-					Value(&selectedExt),
-				FooterNote(),
-			),
-		).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false).Run()
-
-		if err != nil {
-			return defaults, true, nil
-		}
-	}
-
-	if selectedExt == "__manual__" {
-		err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewInput().
-					Title("Extensión actual").
-					Placeholder(".jpeg").
-					Value(&currentExt),
-				FooterNote(),
-			),
-		).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false).Run()
-
-		if err != nil {
-			return defaults, true, nil
-		}
-	} else {
-		currentExt = selectedExt
-	}
-
-	// 3. Nueva extensión y modo recursivo
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
-				Title("Nueva extensión").
-				Placeholder(".jpg").
+				Title("Carpeta:").
+				Placeholder(". (actual)").
+				Value(&dir).
+				Inline(true).
+				Validate(validateDir),
+			huh.NewInput().
+				Title("Extensión actual:").
+				Placeholder("ej. .jpeg").
+				Value(&currentExt).
+				Inline(true).
+				Validate(func(s string) error {
+					if strings.TrimSpace(s) == "" {
+						return errors.New("debes indicar la extensión actual")
+					}
+					return nil
+				}),
+			huh.NewInput().
+				Title("Nueva extensión:").
+				Placeholder("ej. .jpg").
 				Value(&newExt).
+				Inline(true).
 				Validate(func(s string) error {
 					if strings.TrimSpace(s) == "" {
 						return errors.New("debes indicar la nueva extensión")
@@ -111,8 +59,10 @@ func FormExtChange(defaults core.ExtChangeOptions) (core.ExtChangeOptions, bool,
 					return nil
 				}),
 			huh.NewConfirm().
-				Title("¿Incluir subcarpetas recursivamente?").
-				Value(&recursive),
+				Title("¿Incluir subcarpetas?").
+				Value(&recursive).
+				Inline(true).
+				WithButtonAlignment(lipgloss.Left),
 			FooterNote(),
 		),
 	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false)
@@ -120,6 +70,8 @@ func FormExtChange(defaults core.ExtChangeOptions) (core.ExtChangeOptions, bool,
 	if err := form.Run(); err != nil {
 		return defaults, true, nil
 	}
+
+	absDir, _ := filepath.Abs(dir)
 
 	return core.ExtChangeOptions{
 		Directory:  absDir,
@@ -162,17 +114,20 @@ func FormNumbering(defaults core.NumbererOptions) (core.NumbererOptions, bool, e
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
-				Title("Carpeta").
+				Title("Carpeta:").
 				Value(&dir).
+				Inline(true).
 				Validate(validateDir),
 			huh.NewInput().
-				Title("Filtrar por extensión (opcional)").
-				Placeholder("ej. .jpg o dejar vacío para todos").
-				Value(&ext),
+				Title("Filtrar por extensión (opcional):").
+				Placeholder("ej. .jpg o vacío para todos").
+				Value(&ext).
+				Inline(true),
 			huh.NewInput().
-				Title("Número inicial").
+				Title("Número inicial:").
 				Placeholder("1").
 				Value(&startStr).
+				Inline(true).
 				Validate(func(s string) error {
 					_, ok := new(big.Int).SetString(strings.TrimSpace(s), 10)
 					if !ok {
@@ -181,24 +136,30 @@ func FormNumbering(defaults core.NumbererOptions) (core.NumbererOptions, bool, e
 					return nil
 				}),
 			huh.NewInput().
-				Title("Prefijo (opcional)").
+				Title("Prefijo (opcional):").
 				Placeholder("ej. doc_").
-				Value(&prefix),
+				Value(&prefix).
+				Inline(true),
 			huh.NewInput().
-				Title("Sufijo (opcional)").
+				Title("Sufijo (opcional):").
 				Placeholder("ej. _final").
-				Value(&suffix),
+				Value(&suffix).
+				Inline(true),
 			huh.NewConfirm().
-				Title("¿Conservar nombre original tras el número? (ej. 001_foto.jpg)").
-				Value(&keepOriginal),
+				Title("¿Conservar nombre original tras número?").
+				Value(&keepOriginal).
+				Inline(true).
+				WithButtonAlignment(lipgloss.Left),
 			huh.NewConfirm().
-				Title("¿Renombrar en la misma carpeta (in-place)?").
-				Description("Si eliges No, se guardarán en una subcarpeta").
-				Value(&inPlace),
+				Title("¿Renombrar in-place (misma carpeta)?").
+				Value(&inPlace).
+				Inline(true).
+				WithButtonAlignment(lipgloss.Left),
 			huh.NewInput().
-				Title("Subcarpeta de destino (si no es in-place)").
+				Title("Subcarpeta de destino:").
 				Placeholder("temp (por defecto)").
-				Value(&targetSubdir),
+				Value(&targetSubdir).
+				Inline(true),
 			FooterNote(),
 		),
 	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false)
@@ -208,7 +169,9 @@ func FormNumbering(defaults core.NumbererOptions) (core.NumbererOptions, bool, e
 	}
 
 	absDir, _ := filepath.Abs(dir)
-	startNum, _ := new(big.Int).SetString(strings.TrimSpace(startStr), 10)
+	startClean := strings.TrimSpace(startStr)
+	startNum, _ := new(big.Int).SetString(startClean, 10)
+	width := len(startClean)
 
 	cleanSubdir := strings.TrimSpace(targetSubdir)
 	if cleanSubdir == "" {
@@ -219,7 +182,7 @@ func FormNumbering(defaults core.NumbererOptions) (core.NumbererOptions, bool, e
 		Directory:        absDir,
 		Extension:        ext,
 		Start:            startNum,
-		Width:            defaults.Width,
+		Width:            width,
 		Prefix:           prefix,
 		Suffix:           suffix,
 		KeepOriginalName: keepOriginal,
@@ -249,35 +212,45 @@ func FormRenaming(defaults core.RenamerOptions) (core.RenamerOptions, bool, erro
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
-				Title("Carpeta").
+				Title("Carpeta:").
 				Value(&dir).
+				Inline(true).
 				Validate(validateDir),
 			huh.NewInput().
-				Title("Filtrar por extensión (opcional)").
+				Title("Filtrar por extensión (opcional):").
 				Placeholder("ej. .png o vacío para todos").
-				Value(&ext),
+				Value(&ext).
+				Inline(true),
 			huh.NewInput().
-				Title("Texto a buscar").
+				Title("Texto a buscar:").
 				Placeholder("ej. copia").
-				Value(&search),
+				Value(&search).
+				Inline(true),
 			huh.NewInput().
-				Title("Reemplazar por").
-				Placeholder("ej. original (o dejar vacío para borrar)").
-				Value(&replace),
+				Title("Reemplazar por:").
+				Placeholder("ej. original (o vacío para borrar)").
+				Value(&replace).
+				Inline(true),
 			huh.NewInput().
-				Title("Agregar prefijo (opcional)").
+				Title("Prefijo (opcional):").
 				Placeholder("ej. 2026_").
-				Value(&prefix),
+				Value(&prefix).
+				Inline(true),
 			huh.NewInput().
-				Title("Agregar sufijo (opcional)").
+				Title("Sufijo (opcional):").
 				Placeholder("ej. _v2").
-				Value(&suffix),
+				Value(&suffix).
+				Inline(true),
 			huh.NewConfirm().
-				Title("¿Ignorar mayúsculas y minúsculas al buscar?").
-				Value(&ignoreCase),
+				Title("¿Ignorar mayúsculas y minúsculas?").
+				Value(&ignoreCase).
+				Inline(true).
+				WithButtonAlignment(lipgloss.Left),
 			huh.NewConfirm().
-				Title("¿Incluir subcarpetas recursivamente?").
-				Value(&recursive),
+				Title("¿Incluir subcarpetas?").
+				Value(&recursive).
+				Inline(true).
+				WithButtonAlignment(lipgloss.Left),
 			FooterNote(),
 		),
 	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false)
@@ -329,20 +302,24 @@ func FormNormalizing(defaults core.NormalizerOptions) (core.NormalizerOptions, b
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
-				Title("Carpeta").
+				Title("Carpeta:").
 				Value(&dir).
+				Inline(true).
 				Validate(validateDir),
 			huh.NewInput().
-				Title("Filtrar por extensión (opcional)").
+				Title("Filtrar por extensión (opcional):").
 				Placeholder("ej. .md o vacío para todos").
-				Value(&ext),
+				Value(&ext).
+				Inline(true),
 			huh.NewSelect[string]().
-				Title("Estilo de normalización").
+				Title("Estilo de normalización:").
 				Options(styleOptions...).
 				Value(&styleStr),
 			huh.NewConfirm().
-				Title("¿Incluir subcarpetas recursivamente?").
-				Value(&recursive),
+				Title("¿Incluir subcarpetas?").
+				Value(&recursive).
+				Inline(true).
+				WithButtonAlignment(lipgloss.Left),
 			FooterNote(),
 		),
 	).WithTheme(CustomTheme()).WithKeyMap(CustomKeyMap()).WithShowHelp(false)
