@@ -76,13 +76,10 @@ func PlanNumbering(opts NumbererOptions) (*FilePlan, error) {
 		start = big.NewInt(1)
 	}
 
-	// Calcular ancho de dígitos
-	width := opts.Width
-	if width <= 0 {
-		totalCount := big.NewInt(int64(len(matched) - 1))
-		lastNum := new(big.Int).Add(start, totalCount)
-		width = max(3, len(lastNum.String()))
-	}
+	// Calcular ancho de dígitos respetando el número inicial y el total de archivos
+	totalCount := big.NewInt(int64(len(matched) - 1))
+	lastNum := new(big.Int).Add(start, totalCount)
+	width := max(opts.Width, max(3, len(lastNum.String())))
 
 	targetDir := dir
 	if !opts.InPlace {

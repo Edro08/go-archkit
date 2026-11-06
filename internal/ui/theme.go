@@ -93,9 +93,12 @@ func FooterNote() *huh.Note {
 	return huh.NewNote().Title(footer)
 }
 
-// CustomTheme retorna un tema de Huh minimalista y con sangría alineada.
+// CustomTheme retorna un tema de Huh minimalista, compacto y sin dobles saltos de línea.
 func CustomTheme() *huh.Theme {
 	t := huh.ThemeBase()
+
+	// Separador compacto: 1 solo salto de línea en lugar del doble salto (\n\n) por defecto
+	t.FieldSeparator = lipgloss.NewStyle().SetString("\n")
 
 	// Alinear campos a 2 espacios
 	t.Focused.Base = lipgloss.NewStyle().PaddingLeft(2)
@@ -121,13 +124,13 @@ func CustomTheme() *huh.Theme {
 		Bold(true).
 		Foreground(lipgloss.Color("#FFFFFF")).
 		Background(colorPrimary).
-		Padding(0, 2).
-		MarginRight(2)
+		Padding(0, 1).
+		MarginRight(1)
 
 	t.Focused.BlurredButton = lipgloss.NewStyle().
 		Foreground(colorDim).
-		Padding(0, 2).
-		MarginRight(2)
+		Padding(0, 1).
+		MarginRight(1)
 
 	t.Blurred.FocusedButton = t.Focused.FocusedButton
 	t.Blurred.BlurredButton = t.Focused.BlurredButton
